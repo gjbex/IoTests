@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "writer_cl.h"
+#include "utils.h"
 
 int write_text(char *file_name, long size);
 int write_text_buffered(char *file_name, long size, int buffer_size);
@@ -16,7 +17,7 @@ int validateCL(Params *params) ;
 int main(int argc, char *argv[]) {
     Params params;
     struct timeval startTime, endTime;
-    size_t total_bytes;
+    long total_bytes;
     double total_time;
     initCL(&params);
     parseCL(&params, &argc, &argv);
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&endTime, NULL);
     total_time =  endTime.tv_sec - startTime.tv_sec +
         (endTime.tv_usec - startTime.tv_usec)*1e-6;
-    total_bytes = params.size*sizeof(double);
+    total_bytes = get_size(params.file);
     printf("%s\t%ld\t%d\t%.6f\n", params.file, total_bytes, params.buffer,
             total_time);
     finalizeCL(&params);
