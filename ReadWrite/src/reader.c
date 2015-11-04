@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "reader_cl.h"
 
@@ -10,12 +12,17 @@ int read_text_buffered(char *file_name, int buffer_size);
 int read_binary(char *file_name);
 int read_binary_buffered(char *file_name, int buffer_size);
 int validateCL(Params *params);
+long get_size(char *file_name);
 
 int main(int argc, char *argv[]) {
     Params params;
+    struct timeval startTime, endTime;
+    double total_time;
+    long total_bytes;
     initCL(&params);
     parseCL(&params, &argc, &argv);
     validateCL(&params);
+    gettimeofday(&endTime, NULL);
     if (params.buffer > 0) {
         if (strncmp(params.mode, "text", 6) == 0) {
             read_text_buffered(params.file, params.buffer);
@@ -35,6 +42,12 @@ int main(int argc, char *argv[]) {
                     params.mode);
         }
     }
+    gettimeofday(&endTime, NULL);
+    total_time =  endTime.tv_sec - startTime.tv_sec +
+        (endTime.tv_usec - startTime.tv_usec)*1e-6;
+    total_bytes = get_size(params.file);
+    printf("%s\t%ld\t%d\t%.6f\n", params.file, total_bytes, params.buffer,
+            total_time);
     finalizeCL(&params);
     return EXIT_SUCCESS;
 }
@@ -148,4 +161,15 @@ int read_binary_buffered(char *file_name, int buffer_size) {
 int validateCL(Params *params)  {
     if (params->buffer < 0)
         errx(EXIT_FAILURE, "buffer size must be positive or zero");
+}
+
+long get_size(char *file_name) {
+    FILE *fp;
+    long size;
+    if ((fp = fopen(file_name, "rb")) == NULL) {
+        err(EXIT_FAILURE, "can't open file '%s'", file_name);
+    }
+    fseek(fp, 0L, SEEK_END);
+    size = ftell(fp);
+    fclose(fp);
 }
