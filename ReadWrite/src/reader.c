@@ -6,13 +6,13 @@
 #include <unistd.h>
 
 #include "reader_cl.h"
+#include "utils.h"
 
 int read_text(char *file_name);
 int read_text_buffered(char *file_name, int buffer_size);
 int read_binary(char *file_name);
 int read_binary_buffered(char *file_name, int buffer_size);
 int validateCL(Params *params);
-long get_size(char *file_name);
 
 int main(int argc, char *argv[]) {
     Params params;
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     initCL(&params);
     parseCL(&params, &argc, &argv);
     validateCL(&params);
-    gettimeofday(&endTime, NULL);
+    gettimeofday(&startTime, NULL);
     if (params.buffer > 0) {
         if (strncmp(params.mode, "text", 6) == 0) {
             read_text_buffered(params.file, params.buffer);
@@ -88,6 +88,7 @@ int read_text_buffered(char *file_name, int buffer_size) {
     offset = 0;
     while (nr_read = fread(str_ptr + offset, sizeof(char),
                            buffer_size - offset, fp)) {
+        *(str_ptr + offset + nr_read) = '\0';
         while ((new_str_ptr = strchr(str_ptr, '\n')) != NULL) {
             sscanf(str_ptr, "%le", &x);
             sum += x;
@@ -101,7 +102,6 @@ int read_text_buffered(char *file_name, int buffer_size) {
         }
         offset = strlen(str_ptr);
         str_ptr = buffer;
-        memset(str_ptr + offset, '\0', buffer_size - offset);
     }
     fclose(fp);
     free(buffer);
@@ -161,15 +161,4 @@ int read_binary_buffered(char *file_name, int buffer_size) {
 int validateCL(Params *params)  {
     if (params->buffer < 0)
         errx(EXIT_FAILURE, "buffer size must be positive or zero");
-}
-
-long get_size(char *file_name) {
-    FILE *fp;
-    long size;
-    if ((fp = fopen(file_name, "rb")) == NULL) {
-        err(EXIT_FAILURE, "can't open file '%s'", file_name);
-    }
-    fseek(fp, 0L, SEEK_END);
-    size = ftell(fp);
-    fclose(fp);
 }
