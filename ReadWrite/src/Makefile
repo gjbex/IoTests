@@ -4,8 +4,8 @@ CPPFLAGS =
 LDFLAGS = -static
 LIBS =
 
-WRITER_OBJS = writer_cl_aux.o writer_cl.o writer.o
-READER_OBJS = reader_cl_aux.o reader_cl.o reader.o
+WRITER_OBJS = writer_cl_aux.o writer_cl.o utils.o writer.o
+READER_OBJS = reader_cl_aux.o reader_cl.o utils.o reader.o
 
 all: writer reader
 
