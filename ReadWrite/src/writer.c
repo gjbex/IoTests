@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "writer_cl.h"
 
@@ -13,9 +15,13 @@ int validateCL(Params *params) ;
 
 int main(int argc, char *argv[]) {
     Params params;
+    struct timeval startTime, endTime;
+    size_t total_bytes;
+    double total_time;
     initCL(&params);
     parseCL(&params, &argc, &argv);
     validateCL(&params);
+    gettimeofday(&startTime, NULL);
     if (params.buffer > 0) {
         if (strncmp(params.mode, "text", 6) == 0) {
             write_text_buffered(params.file, params.size, params.buffer);
@@ -35,6 +41,12 @@ int main(int argc, char *argv[]) {
                     params.mode);
         }
     }
+    gettimeofday(&endTime, NULL);
+    total_bytes = params.size*sizeof(double);
+    total_time =  endTime.tv_sec - startTime.tv_sec +
+        (endTime.tv_usec - startTime.tv_usec)*1e-6;
+    printf("%s\t%ld\t%d\t%.6f\n", params.file, total_bytes, params.buffer,
+            total_time);
     finalizeCL(&params);
     return EXIT_SUCCESS;
 }
