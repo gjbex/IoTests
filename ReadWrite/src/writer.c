@@ -42,9 +42,9 @@ int main(int argc, char *argv[]) {
         }
     }
     gettimeofday(&endTime, NULL);
-    total_bytes = params.size*sizeof(double);
     total_time =  endTime.tv_sec - startTime.tv_sec +
         (endTime.tv_usec - startTime.tv_usec)*1e-6;
+    total_bytes = params.size*sizeof(double);
     printf("%s\t%ld\t%d\t%.6f\n", params.file, total_bytes, params.buffer,
             total_time);
     finalizeCL(&params);
@@ -117,6 +117,7 @@ int write_binary_buffered(char *file_name, long size, int buffer_size) {
     long i;
     size_t buffer_bytes = (buffer_size/sizeof(double))*sizeof(double),
            nr_written = 0;
+    int buffer_idx = 0;
     FILE *fp;
     if (buffer_size % sizeof(double) != 0) {
         warnx("buffer size is not a multiple of double precsion type size");
@@ -130,9 +131,10 @@ int write_binary_buffered(char *file_name, long size, int buffer_size) {
         err(EXIT_FAILURE, "can't open file '%s'", file_name);
     }
     for (i = 0; i < size; i++) {
-        buffer[i % buffer_size] = x;
-        if ((i + 1) % buffer_size == 0) {
+        buffer[buffer_idx++] = x;
+        if (buffer_size == buffer_idx) {
             nr_written += fwrite(buffer, sizeof(double), buffer_size, fp);
+            buffer_idx = 0;
         }
         x += delta;
     }
