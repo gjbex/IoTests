@@ -12,5 +12,5 @@ echo ${size}
 for buffer_size in 0 1024 4096 16384 65536 1048576
 do
     ./writer -buffer ${buffer_size} -size ${size} \
-             -mode binary -file $VSC_SCRATCH/data.bin
+             -mode binary -file ${VSC_SCRATCH}/data.bin
 done
