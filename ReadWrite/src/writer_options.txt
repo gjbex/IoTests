@@ -1,0 +1,5 @@
+char *,file,'output.dat'
+char *,mode,'text'
+long,size,1024
+int,buffer,128
+int,verbose,0

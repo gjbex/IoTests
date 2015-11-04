@@ -1,0 +1,4 @@
+char *,file,'input.dat'
+char *,mode,'text'
+int,buffer,128
+int,verbose,0

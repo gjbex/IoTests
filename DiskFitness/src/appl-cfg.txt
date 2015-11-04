@@ -1,0 +1,9 @@
+int	nrFiles	1
+char *	path	'/node_scratch/tmp-XXXXXX'
+long	fileSize	10000000
+int	bufferSize	65536
+int	doRead	1
+int	doRandomRead	1
+long	randomReads	1000000
+int	cleanUp	1
+int	verbose	0

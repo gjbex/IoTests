@@ -1,0 +1,46 @@
+#!/bin/bash -l
+#PBS -j oe
+
+nodes=$( cat ${PBS_NODEFILE} )
+
+if [ -z ${conf} ]
+then
+    conf='default.conf'
+fi
+
+echo "# Running with ${conf}"
+cd ${PBS_O_WORKDIR}
+# dump configuration
+./diskfitness ${conf} 1
+
+process_nr=0
+for node in ${nodes}
+do
+    output="${PBS_JOBID}-${process_nr}"
+    ssh ${node} "cd ${PBS_O_WORKDIR}; ./diskfitness ${conf} > ${output}" &
+    process_nr=$(( $process_nr + 1 ))
+    sleep 0.1
+done
+
+wait
+
+process_nr=0
+nr_ok=0
+for node in ${nodes}
+do
+    output="${PBS_JOBID}-${process_nr}"
+    cat ${output}
+    grep 'finished succesfully' ${output} &> /dev/null
+    if [ $? -eq 0 ]
+    then
+        nr_ok=$(( ${nr_ok} + 1 ))
+    fi
+    rm ${output}
+    process_nr=$(( $process_nr + 1 ))
+done
+
+if [ ${nr_ok} -eq ${process_nr} ]
+then
+    echo "# diskfitness finished succesfully"
+fi
+
