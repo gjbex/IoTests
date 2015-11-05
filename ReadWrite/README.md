@@ -78,8 +78,8 @@ of buffering for text files does not improve performance.
 Although pure binary I/O is some 10 % faster dan HDF5, this could be
 outweighed by the latter's portability and extra functionality.
 
-For binary I/O, buffering is benificial.  Buffer sizes should be of the
-same order of that of the file system's block size.
+For binary I/O, buffering is benificial, even for size in the order of a
+few Kb.
 
 Buffering for HDF5 can improve performance by approximately 10 % for large
 buffer sizes (1 Mb), but it complicates the development since one has to
