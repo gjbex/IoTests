@@ -13,6 +13,7 @@ int write_text(char *file_name, long size);
 int write_text_buffered(char *file_name, long size, int buffer_size);
 int write_binary(char *file_name, long size);
 int write_binary_buffered(char *file_name, long size, int buffer_size);
+int write_hdf5(char *file_name, long size);
 int write_hdf5_buffered(char *file_name, long size, int buffer_size);
 int validateCL(Params *params) ;
 
@@ -41,6 +42,8 @@ int main(int argc, char *argv[]) {
             write_text(params.file, params.size);
         } else if (strncmp(params.mode, "binary", 6) == 0) {
             write_binary(params.file, params.size);
+        } else if (strncmp(params.mode, "hdf5", 6) == 0) {
+            write_hdf5(params.file, params.size);
         } else {
             errx(EXIT_FAILURE, "unknown mode '%s' for unbuffered I/O",
                     params.mode);
@@ -148,6 +151,37 @@ int write_binary_buffered(char *file_name, long size, int buffer_size) {
     }
     fclose(fp);
     free(buffer);
+    return EXIT_SUCCESS;
+}
+
+int write_hdf5(char *file_name, long size) {
+    double x = 1.0e-10, delta = 1.0e-10;
+    double *data;
+    long i;
+    hid_t file_id, dataset_id, dataspace_id;
+    hsize_t dataspace_dims[1], offset[1], count[1];
+    size_t data_bytes = size*sizeof(double);
+    herr_t status;
+    if ((data = (double *) malloc(data_bytes)) == NULL) {
+        errx(EXIT_FAILURE, "can't allocate data of size %lu",
+                size*sizeof(double));
+    }
+    file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
+                        H5P_DEFAULT);
+    dataspace_dims[0] = size;
+    dataspace_id = H5Screate_simple(1, dataspace_dims, NULL);
+    dataset_id = H5Dcreate(file_id, "/values", H5T_IEEE_F64LE, dataspace_id,
+                           H5P_DEFAULT, H5P_DEFAULT,H5P_DEFAULT);
+    for (i = 0; i < size; i++) {
+        data[i] = x;
+        x += delta;
+    }
+    H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+             H5P_DEFAULT, data);
+    H5Dclose(dataset_id);
+    H5Sclose(dataspace_id);
+    H5Fclose(file_id);
+    free(data);
     return EXIT_SUCCESS;
 }
 
