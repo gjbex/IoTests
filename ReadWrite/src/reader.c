@@ -4,15 +4,18 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <hdf5.h>
 
 #include "reader_cl.h"
+#include "utils.h"
 
 int read_text(char *file_name);
 int read_text_buffered(char *file_name, int buffer_size);
 int read_binary(char *file_name);
 int read_binary_buffered(char *file_name, int buffer_size);
+int read_hdf5(char *file_name);
+int read_hdf5_buffered(char *file_name, int buffer_size);
 int validateCL(Params *params);
-long get_size(char *file_name);
 
 int main(int argc, char *argv[]) {
     Params params;
@@ -22,12 +25,14 @@ int main(int argc, char *argv[]) {
     initCL(&params);
     parseCL(&params, &argc, &argv);
     validateCL(&params);
-    gettimeofday(&endTime, NULL);
+    gettimeofday(&startTime, NULL);
     if (params.buffer > 0) {
         if (strncmp(params.mode, "text", 6) == 0) {
             read_text_buffered(params.file, params.buffer);
         } else if (strncmp(params.mode, "binary", 6) == 0) {
             read_binary_buffered(params.file, params.buffer);
+        } else if (strncmp(params.mode, "hdf5", 4) == 0) {
+            read_hdf5_buffered(params.file, params.buffer);
         } else {
             errx(EXIT_FAILURE, "unknown mode '%s' for buffered",
                     params.mode);
@@ -37,6 +42,8 @@ int main(int argc, char *argv[]) {
             read_text(params.file);
         } else if (strncmp(params.mode, "binary", 6) == 0) {
             read_binary(params.file);
+        } else if (strncmp(params.mode, "hdf5", 4) == 0) {
+            read_hdf5(params.file);
         } else {
             errx(EXIT_FAILURE, "unknown mode '%s' for unbuffered I/O",
                     params.mode);
@@ -74,7 +81,6 @@ int read_text(char *file_name) {
 int read_text_buffered(char *file_name, int buffer_size) {
     double x, sum = 0.0;
     long nr_reads = 0, nr_read;
-    char repr[100];
     char *buffer, *str_ptr, *new_str_ptr;
     FILE *fp;
     int offset;
@@ -86,8 +92,9 @@ int read_text_buffered(char *file_name, int buffer_size) {
     }
     str_ptr = buffer;
     offset = 0;
-    while (nr_read = fread(str_ptr + offset, sizeof(char),
-                           buffer_size - offset, fp)) {
+    while ((nr_read = fread(str_ptr + offset, sizeof(char),
+                            buffer_size - offset, fp))) {
+        *(str_ptr + offset + nr_read) = '\0';
         while ((new_str_ptr = strchr(str_ptr, '\n')) != NULL) {
             sscanf(str_ptr, "%le", &x);
             sum += x;
@@ -101,7 +108,6 @@ int read_text_buffered(char *file_name, int buffer_size) {
         }
         offset = strlen(str_ptr);
         str_ptr = buffer;
-        memset(str_ptr + offset, '\0', buffer_size - offset);
     }
     fclose(fp);
     free(buffer);
@@ -128,7 +134,7 @@ int read_binary(char *file_name) {
 }
 
 int read_binary_buffered(char *file_name, int buffer_size) {
-    double x, sum = 0.0;
+    double sum = 0.0;
     double *buffer;
     long nr_read, nr_reads = 0;
     size_t buffer_bytes = (buffer_size/sizeof(double))*sizeof(double);
@@ -158,18 +164,99 @@ int read_binary_buffered(char *file_name, int buffer_size) {
     return EXIT_SUCCESS;
 }
 
+int read_hdf5(char *file_name) {
+    double sum = 0.0;
+    double *data;
+    long i;
+    hid_t file_id, dataset_id, dataspace_id;
+    hsize_t dataspace_dims[1];
+    size_t data_bytes;
+    file_id = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
+    dataset_id = H5Dopen(file_id, "/values", H5P_DEFAULT);
+    dataspace_id = H5Dget_space(dataset_id);
+    H5Sget_simple_extent_dims(dataspace_id, dataspace_dims, NULL);
+    data_bytes = dataspace_dims[0]*sizeof(double);
+    if ((data = (double *) malloc(data_bytes)) == NULL) {
+        errx(EXIT_FAILURE, "can't allocate data of size %d", data_bytes);
+    }
+    H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+            H5P_DEFAULT, data);
+    H5Dclose(dataset_id);
+    H5Sclose(dataspace_id);
+    H5Fclose(file_id);
+    for (i = 0; i < dataspace_dims[0]; i++) {
+        sum += data[i];
+    }
+    fprintf(stderr, "%lu double precision numbers read, sum = %le\n",
+            (long unsigned) dataspace_dims[0], sum);
+    free(data);
+    return EXIT_SUCCESS;
+}
+
+int read_hdf5_buffered(char *file_name, int buffer_size) {
+    double sum = 0.0;
+    double *buffer;
+    long i;
+    hid_t file_id, dataset_id, dataspace_id, memspace_id;
+    hsize_t dataspace_dims[1], offset[1], count[0], mem_offset[1],
+            mem_count[1], remainder;
+    size_t buffer_bytes = (buffer_size/sizeof(double))*sizeof(double);
+    if (buffer_size % sizeof(double) != 0) {
+        warnx("buffer size is not a multiple of double precsion type size");
+    }
+    buffer_size = buffer_bytes/sizeof(double);
+    if ((buffer = (double *) malloc(buffer_bytes)) == NULL) {
+        errx(EXIT_FAILURE, "can't allocate buffer of size %d",
+                buffer_bytes);
+    }
+    printf("%d, %d\n", buffer_size, buffer_bytes);
+    file_id = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
+    dataset_id = H5Dopen(file_id, "/values", H5P_DEFAULT);
+    dataspace_id = H5Dget_space(dataset_id);
+    H5Sget_simple_extent_dims(dataspace_id, dataspace_dims, NULL);
+    mem_count[0] = buffer_size;
+    memspace_id = H5Screate_simple(1, mem_count, NULL);
+    mem_offset[0] = 0;
+    H5Sselect_hyperslab(memspace_id, H5S_SELECT_SET, mem_offset, NULL,
+                        mem_count, NULL);
+    count[0] = buffer_size;
+    for (offset[0] = 0; offset[0] < dataspace_dims[0] - buffer_size;
+            offset[0] += buffer_size) {
+        H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, NULL,
+                            count, NULL);
+        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, memspace_id,
+                dataspace_id, H5P_DEFAULT, buffer);
+        for (i = 0; i < buffer_size; i++) {
+            sum += buffer[i];
+        }
+    }
+    remainder = dataspace_dims[0] % buffer_size;
+    if (remainder != 0) {
+        mem_count[0] = remainder;
+        H5Sselect_hyperslab(memspace_id, H5S_SELECT_SET, mem_offset, NULL,
+                            mem_count, NULL);
+        offset[0] = dataspace_dims[0] - remainder;
+        count[0] = remainder;
+        H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, NULL,
+                            count, NULL);
+        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, memspace_id,
+                dataspace_id, H5P_DEFAULT, buffer);
+        for (i = 0; i < remainder; i++) {
+            sum += buffer[i];
+        }
+    }
+    H5Dclose(dataset_id);
+    H5Sclose(dataspace_id);
+    H5Sclose(memspace_id);
+    H5Fclose(file_id);
+    fprintf(stderr, "%lu double precision numbers read, sum = %le\n",
+            (long unsigned) dataspace_dims[0], sum);
+    free(buffer);
+    return EXIT_SUCCESS;
+}
+
 int validateCL(Params *params)  {
     if (params->buffer < 0)
         errx(EXIT_FAILURE, "buffer size must be positive or zero");
-}
-
-long get_size(char *file_name) {
-    FILE *fp;
-    long size;
-    if ((fp = fopen(file_name, "rb")) == NULL) {
-        err(EXIT_FAILURE, "can't open file '%s'", file_name);
-    }
-    fseek(fp, 0L, SEEK_END);
-    size = ftell(fp);
-    fclose(fp);
+    return EXIT_SUCCESS;
 }
