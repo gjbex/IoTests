@@ -72,11 +72,11 @@ Important notes:
     be obtained for implementations i other programming languages (Fortran
     and Python would be interesting to compare with)
 
-In general, text I/O is much slower than binary or HDF5.
+In general, text I/O is much slower than binary or HDF5.  The implementation
+of buffering for text files does not improve performance.
 
-Although pure
-binary I/O is some 10 % faster dan HDF5, this could be outweighed by the
-latter's portability and extra functionality.
+Although pure binary I/O is some 10 % faster dan HDF5, this could be
+outweighed by the latter's portability and extra functionality.
 
 For binary I/O, buffering is benificial.  Buffer sizes should be of the
 same order of that of the file system's block size.
