@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <hdf5.h>
 
 #include "writer_cl.h"
 #include "utils.h"
@@ -12,6 +13,7 @@ int write_text(char *file_name, long size);
 int write_text_buffered(char *file_name, long size, int buffer_size);
 int write_binary(char *file_name, long size);
 int write_binary_buffered(char *file_name, long size, int buffer_size);
+int write_hdf5_buffered(char *file_name, long size, int buffer_size);
 int validateCL(Params *params) ;
 
 int main(int argc, char *argv[]) {
@@ -28,6 +30,8 @@ int main(int argc, char *argv[]) {
             write_text_buffered(params.file, params.size, params.buffer);
         } else if (strncmp(params.mode, "binary", 6) == 0) {
             write_binary_buffered(params.file, params.size, params.buffer);
+        } else if (strncmp(params.mode, "hdf5", 6) == 0) {
+            write_hdf5_buffered(params.file, params.size, params.buffer);
         } else {
             errx(EXIT_FAILURE, "unknown mode '%s' for buffered",
                     params.mode);
@@ -143,6 +147,58 @@ int write_binary_buffered(char *file_name, long size, int buffer_size) {
         nr_written += fwrite(buffer, sizeof(double), size - nr_written, fp);
     }
     fclose(fp);
+    free(buffer);
+    return EXIT_SUCCESS;
+}
+
+int write_hdf5_buffered(char *file_name, long size, int buffer_size) {
+    double x = 1.0e-10, delta = 1.0e-10;
+    double *buffer;
+    long i;
+    size_t buffer_bytes = (buffer_size/sizeof(double))*sizeof(double),
+           nr_written = 0;
+    int buffer_idx = 0;
+    hid_t file_id, dataset_id, dataspace_id, memspace_id;
+    hsize_t dataspace_dims[1], offset[1], count[1],
+            mem_offset[1], mem_count[1];
+    herr_t status;
+    if (buffer_size % sizeof(double) != 0) {
+        warnx("buffer size is not a multiple of double precsion type size");
+    }
+    buffer_size = buffer_bytes/sizeof(double);
+    if ((buffer = (double *) malloc(buffer_bytes)) == NULL) {
+        errx(EXIT_FAILURE, "can't allocate buffer of size %d",
+                buffer_bytes);
+    }
+    file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
+                        H5P_DEFAULT);
+    dataspace_dims[0] = size;
+    dataspace_id = H5Screate_simple(1, dataspace_dims, NULL);
+    dataset_id = H5Dcreate(file_id, "/values", H5T_IEEE_F64LE, dataspace_id,
+                           H5P_DEFAULT, H5P_DEFAULT,H5P_DEFAULT);
+    count[0] = buffer_size;
+    memspace_id = H5Screate_simple(1, count, NULL);
+    mem_offset[0] = 0;
+    mem_count[0] = buffer_size;
+    H5Sselect_hyperslab(memspace_id, H5S_SELECT_SET, mem_offset, NULL,
+                        mem_count, NULL);
+    count[0] = buffer_size;
+    for (i = 0; i < size; i++) {
+        buffer[buffer_idx++] = x;
+        if (buffer_size == buffer_idx) {
+            offset[0] = i - buffer_size + 1;
+            H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, NULL,
+                                count, NULL);
+            H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, memspace_id,
+                     dataspace_id, H5P_DEFAULT, buffer);
+            buffer_idx = 0;
+        }
+        x += delta;
+    }
+    // TODO: write remaining buffer
+    H5Dclose(dataset_id);
+    H5Sclose(dataspace_id);
+    H5Fclose(file_id);
     free(buffer);
     return EXIT_SUCCESS;
 }

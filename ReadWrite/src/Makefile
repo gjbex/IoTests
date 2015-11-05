@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -O2 -g
 CPPFLAGS = 
-LDFLAGS = -static
-LIBS =
+LDFLAGS =
+LIBS = -lhdf5 -lm
 
 WRITER_OBJS = writer_cl_aux.o writer_cl.o utils.o writer.o
 READER_OBJS = reader_cl_aux.o reader_cl.o utils.o reader.o
