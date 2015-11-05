@@ -3,6 +3,7 @@
 Some applications to perform various I/O tests.
 
 ## What is it?
+1. `BlockSize`: small utility to determine a file system's block size.
 1. `DiskFitness`: file system performance check, either using indepedent
     processes, or MPI with POSIX I/O.
 1. `ReadWrite`: Test application to experiment with read and write
