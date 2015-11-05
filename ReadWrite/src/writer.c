@@ -187,13 +187,11 @@ int write_hdf5_buffered(char *file_name, long size, int buffer_size) {
     double x = 1.0e-10, delta = 1.0e-10;
     double *buffer;
     long i;
-    size_t buffer_bytes = (buffer_size/sizeof(double))*sizeof(double),
-           nr_written = 0;
+    size_t buffer_bytes = (buffer_size/sizeof(double))*sizeof(double);
     int buffer_idx = 0;
     hid_t file_id, dataset_id, dataspace_id, memspace_id;
     hsize_t dataspace_dims[1], offset[1], count[1],
             mem_offset[1], mem_count[1];
-    herr_t status;
     if (buffer_size % sizeof(double) != 0) {
         warnx("buffer size is not a multiple of double precsion type size");
     }
@@ -208,10 +206,9 @@ int write_hdf5_buffered(char *file_name, long size, int buffer_size) {
     dataspace_id = H5Screate_simple(1, dataspace_dims, NULL);
     dataset_id = H5Dcreate(file_id, "/values", H5T_IEEE_F64LE, dataspace_id,
                            H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    count[0] = buffer_size;
-    memspace_id = H5Screate_simple(1, count, NULL);
-    mem_offset[0] = 0;
     mem_count[0] = buffer_size;
+    memspace_id = H5Screate_simple(1, mem_count, NULL);
+    mem_offset[0] = 0;
     H5Sselect_hyperslab(memspace_id, H5S_SELECT_SET, mem_offset, NULL,
                         mem_count, NULL);
     count[0] = buffer_size;
@@ -251,4 +248,5 @@ int validateCL(Params *params)  {
         errx(EXIT_FAILURE, "buffer size must be positive or zero");
     if (params->size <= 0)
         errx(EXIT_FAILURE, "file size must be larger than zero");
+    return EXIT_SUCCESS;
 }

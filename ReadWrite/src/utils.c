@@ -1,3 +1,4 @@
+#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,4 +13,5 @@ long get_size(char *file_name) {
     fseek(fp, 0L, SEEK_END);
     size = ftell(fp);
     fclose(fp);
+    return size;
 }
