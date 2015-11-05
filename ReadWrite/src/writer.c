@@ -195,8 +195,19 @@ int write_hdf5_buffered(char *file_name, long size, int buffer_size) {
         }
         x += delta;
     }
-    // TODO: write remaining buffer
+    if (buffer_idx > 0) {
+        mem_count[0] = buffer_idx;
+        H5Sselect_hyperslab(memspace_id, H5S_SELECT_SET, mem_offset, NULL,
+                            mem_count, NULL);
+        offset[0] = size - buffer_idx;
+        count[0] = buffer_idx;
+        H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, NULL,
+                            count, NULL);
+        H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, memspace_id,
+                 dataspace_id, H5P_DEFAULT, buffer);
+    }
     H5Dclose(dataset_id);
+    H5Sclose(memspace_id);
     H5Sclose(dataspace_id);
     H5Fclose(file_id);
     free(buffer);
