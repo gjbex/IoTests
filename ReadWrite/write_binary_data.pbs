@@ -1,0 +1,16 @@
+#!/bin/bash -l
+#PBS -l nodes=1:ppn=20
+#PBS -l mem=60gb
+#PBS -l walltime=00:30:00
+
+module purge
+module load foss/2014a
+module load HDF5/1.8.12-foss-2014a-serial
+
+cd $PBS_O_WORKDIR
+
+size=$(( 1024**3 ))
+buffer_size=4096
+
+./writer -buffer ${buffer_size} -size ${size} \
+         -mode binary -file ${VSC_DATA}/data-${iter}.bin
