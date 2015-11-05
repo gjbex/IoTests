@@ -3,6 +3,10 @@
 #PBS -l mem=60gb
 #PBS -l walltime=00:30:00
 
+module purge
+module load foss/2014a
+module load HDF5/1.8.12-foss-2014a-serial
+
 cd $PBS_O_WORKDIR
 
 size=$(( 1024**3 ))
