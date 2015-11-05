@@ -1,0 +1,15 @@
+#!/bin/bash -l
+#PBS -l nodes=1:ppn=20
+#PBS -l mem=60gb
+#PBS -l walltime=00:30:00
+
+module purge
+module load foss/2014a
+module load HDF5/1.8.12-foss-2014a-serial
+
+cd $PBS_O_WORKDIR
+
+buffer_size=0
+
+./reader -buffer ${buffer_size} \
+         -mode hdf5 -file ${VSC_SCRATCH}/data.h5
