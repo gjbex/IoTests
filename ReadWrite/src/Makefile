@@ -1,7 +1,8 @@
+HDF5_DIR = /usr
 CC = gcc
 CFLAGS = -O2 -g
-CPPFLAGS = 
-LDFLAGS =
+CPPFLAGS = -I$(HDF5_DIR)/include
+LDFLAGS = -L$(HDF5_DIR)/lib
 LIBS = -lhdf5 -lm
 
 WRITER_OBJS = writer_cl_aux.o writer_cl.o utils.o writer.o
