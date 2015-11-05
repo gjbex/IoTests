@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
             write_text_buffered(params.file, params.size, params.buffer);
         } else if (strncmp(params.mode, "binary", 6) == 0) {
             write_binary_buffered(params.file, params.size, params.buffer);
-        } else if (strncmp(params.mode, "hdf5", 6) == 0) {
+        } else if (strncmp(params.mode, "hdf5", 4) == 0) {
             write_hdf5_buffered(params.file, params.size, params.buffer);
         } else {
             errx(EXIT_FAILURE, "unknown mode '%s' for buffered",
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
             write_text(params.file, params.size);
         } else if (strncmp(params.mode, "binary", 6) == 0) {
             write_binary(params.file, params.size);
-        } else if (strncmp(params.mode, "hdf5", 6) == 0) {
+        } else if (strncmp(params.mode, "hdf5", 4) == 0) {
             write_hdf5(params.file, params.size);
         } else {
             errx(EXIT_FAILURE, "unknown mode '%s' for unbuffered I/O",
@@ -159,19 +159,17 @@ int write_hdf5(char *file_name, long size) {
     double *data;
     long i;
     hid_t file_id, dataset_id, dataspace_id;
-    hsize_t dataspace_dims[1], offset[1], count[1];
+    hsize_t dataspace_dims[1];
     size_t data_bytes = size*sizeof(double);
-    herr_t status;
     if ((data = (double *) malloc(data_bytes)) == NULL) {
-        errx(EXIT_FAILURE, "can't allocate data of size %lu",
-                size*sizeof(double));
+        errx(EXIT_FAILURE, "can't allocate data of size %d", data_bytes);
     }
     file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
                         H5P_DEFAULT);
     dataspace_dims[0] = size;
     dataspace_id = H5Screate_simple(1, dataspace_dims, NULL);
     dataset_id = H5Dcreate(file_id, "/values", H5T_IEEE_F64LE, dataspace_id,
-                           H5P_DEFAULT, H5P_DEFAULT,H5P_DEFAULT);
+                           H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     for (i = 0; i < size; i++) {
         data[i] = x;
         x += delta;
@@ -209,7 +207,7 @@ int write_hdf5_buffered(char *file_name, long size, int buffer_size) {
     dataspace_dims[0] = size;
     dataspace_id = H5Screate_simple(1, dataspace_dims, NULL);
     dataset_id = H5Dcreate(file_id, "/values", H5T_IEEE_F64LE, dataspace_id,
-                           H5P_DEFAULT, H5P_DEFAULT,H5P_DEFAULT);
+                           H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     count[0] = buffer_size;
     memspace_id = H5Screate_simple(1, count, NULL);
     mem_offset[0] = 0;
