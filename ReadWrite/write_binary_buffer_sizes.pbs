@@ -13,7 +13,9 @@ size=$(( 1024**3 ))
 
 echo ${size}
 
-for buffer_size in 0 1024 4096 16384 65536 1048576
+for buffer_size in 0 1024 4096 16384 65536 $(( 256*1024 )) $(( 512*1024 ))\
+                   $(( 1024**2 )) $(( 2*1024**2 )) \
+                   $(( 4*1024**2 )) $(( 8*1024**2 ))
 do
     ./writer -buffer ${buffer_size} -size ${size} \
              -mode binary -file ${VSC_SCRATCH}/data.bin
