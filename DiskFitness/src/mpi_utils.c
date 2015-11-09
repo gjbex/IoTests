@@ -57,3 +57,11 @@ void mpiCfg2Cfg(const MpiParams *mpi_cfg, Params *cfg) {
     cfg->fileSize = mpi_cfg->fileSize;
     cfg->randomReads = mpi_cfg->randomReads;
 }
+
+void compute_bounds(int size, int rank, long n,
+                    long *lbound, long *ubound) {
+    long chunk_size = n/size, rest = n % size;
+    *lbound = MIN(rank, size - rest)*chunk_size +
+        MAX(0, rank - (size - rest))*(chunk_size + 1);
+    *ubound = *lbound + (rank >= size - rest ? chunk_size + 1 : chunk_size);
+}

@@ -19,5 +19,6 @@ typedef struct {
 void setupTypes(MPI_Datatype *cfg_type);
 void cfg2MpiCfg(const Params *cfg, MpiParams *mpi_cfg);
 void mpiCfg2Cfg(const MpiParams *mpi_cfg, Params *cfg);
+void compute_bounds(int size, int rank, long n, long *lbound, long *rbound);
 
 #endif
