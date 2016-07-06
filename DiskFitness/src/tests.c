@@ -7,8 +7,8 @@
 #include "utils.h"
 
 int writeFile(Params cfg, char **files) {
-    int i, fileNr, fd = -1, status = 0;
-    long remainder;
+    int fileNr, fd = -1, status = 0;
+    long i, remainder;
     char *buffer = initBuffer(cfg, &status);
     FILE *fp;
     if (status != 0) {
@@ -53,7 +53,8 @@ int writeFile(Params cfg, char **files) {
 }
 
 int readFile(Params cfg, char **files) {
-    int i, fileNr, status = 0;
+    int fileNr, status = 0;
+    long i;
     char *target, *buffer;
     long total = 0, remainder;
     FILE *fp;
@@ -103,7 +104,8 @@ int readFile(Params cfg, char **files) {
 }
 
 int randomReadFile(Params cfg, char **files) {
-    int i, fileNr;
+    int fileNr;
+    long i;
     FILE *fp;
     for (fileNr = 0; fileNr < cfg.nrFiles; fileNr++) {
         if (!(fp = fopen(files[fileNr], "rb"))) {
@@ -139,5 +141,3 @@ int randomReadFile(Params cfg, char **files) {
         return EXIT_SUCCESS;
     }
 }
-
-
