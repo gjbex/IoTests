@@ -133,7 +133,7 @@ int randomReadFile(Params cfg, char **files) {
             if (cfg.verbose && i % 1000 == 0) {
                 struct timeval timePoint;
                 gettimeofday(&timePoint, NULL);
-                fprintf(stderr, "file %d: %d random reeds at %f\n",
+                fprintf(stderr, "file %d: %ld random reeds at %f\n",
                         fileNr, i,
                         timePoint.tv_sec + 1.0e-6*timePoint.tv_usec);
             }
