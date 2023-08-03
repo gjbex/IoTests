@@ -5,15 +5,14 @@ from math import sqrt
 def compute_stats(data):
     '''given a list of data, compute statistics and return as dict'''
     data_sum = sum(data)
-    data_sum2 = sum([x**2 for x in data])
+    data_sum2 = sum(x**2 for x in data)
     n = len(data)
-    stat_data = {
-        'mean': data_sum/n,
+    return {
+        'mean': data_sum / n,
         'min': min(data),
         'max': max(data),
-        'stddev': sqrt((data_sum2 - data_sum**2/n)/(n - 1)),
+        'stddev': sqrt((data_sum2 - data_sum**2 / n) / (n - 1)),
     }
-    return stat_data
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
